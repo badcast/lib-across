@@ -20,24 +20,23 @@ int main()
     using namespace across;
 
     using namespace std;
-    NavResult<APoint> aspr;
+    NavResult<APoint> result;
     cout << "Init Across Map" << endl;
-    AcrossMap adp = across::AcrossMap(1000, 1000);
+    AcrossMap map = across::AcrossMap(100, 100);
 
     cout << "Calculating" << endl;
-    cout << "Damaged: " << check_dmg(&adp) << endl;
-    int x = 2;
-    int y = 0;
-    int z = 0;
+    int x = 1, y = 0, z = 0;
+
     while (x--) {
-        adp.randomGenerate(5);
-        adp.find(aspr, NavMethodRule::NavigationIntelegency, adp.front(), adp.back());
-        if (aspr.status == Opened && z < aspr.RelativePaths.size()) {
+        map.randomGenerate(2);
+
+        map.find(result, NavMethodRule::PlusMethod, map.front(), map.back());
+        if (result.status == Opened && z < result.RelativePaths.size()) {
             ++y;
-            z = aspr.RelativePaths.size();
+            z = result.RelativePaths.size();
         }
     }
-    cout << "Damaged: " << check_dmg(&adp) << endl;
+    cout << "Damaged: " << check_dmg(&map) << endl;
     cout << "Status: " << y << " opened" << endl;
     cout << "Paths: " << z << endl;
     cout << "End." << endl;

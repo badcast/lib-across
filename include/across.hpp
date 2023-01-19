@@ -70,21 +70,21 @@ namespace across
 
         void clear(bool clearLocks = false);
         void fill(bool fillLocks = false);
-        void randomGenerate(int flagFilter = 0xffffff);
+        void randomGenerate(int flagFilter = 0xdeadbef);
         void stress();
 
         int getWidth();
         int getHeight();
 
-        Neuron* GetNeuron(int x, int y) ;
+        Neuron* GetNeuron(int x, int y);
         Neuron* GetNeuron(const Tp& point);
 
         inline bool neuronContains(const Tp& point);
 
         inline const Tp neuronGetPoint(const Neuron* neuron);
 
-        Neuron* front() ;
-        Neuron* back() ;
+        Neuron* front();
+        Neuron* back();
 
         // pointer with Point
         inline bool neuronLocked(const Tp& point);
@@ -154,7 +154,7 @@ namespace across
             return result;
         }
 
-        /// Определяет, функцию пойска по направлениям. Таких как: left, up, right,
+        /// Определяет, функцию пойска по направлениям. Таких как: left, up, right, down. etc.
         static void AvailPoints(basic_across_map<Tp>& map, NavMethodRule method, Tp arrange, Tp target, std::list<Tp>* pathTo, std::size_t maxCount = -1, int filterFlag = -1);
     };
     template <typename Tp>
@@ -167,7 +167,7 @@ namespace across
         this->heightSpace = lheight;
 
         std::div_t lockedDiv = div(std::max(lheight = (lwidth * lheight), 8), 8); // add locked bits
-        segmentOffset = lwidth = lockedDiv.quot + lockedDiv.rem;
+        this->segmentOffset = lwidth = lockedDiv.quot + lockedDiv.rem;
         this->neurons = std::malloc(lheight * AcrossDataSizeMultiplier + lwidth + 100);
     }
 
@@ -185,8 +185,8 @@ namespace across
         clear(true);
         do {
             lhs = static_cast<std::uint32_t>(rand() & flagFilter);
-            memcpy(reinterpret_cast<std::int8_t*>(neurons) + segmentOffset - rhs, &lhs, std::min(rhs, (std::uint32_t)sizeof(int)));
-            rhs -= std::min(rhs, static_cast<std::uint32_t>(sizeof(int)));
+            memcpy(reinterpret_cast<std::int8_t*>(neurons) + segmentOffset - rhs, &lhs, std::min(rhs, (std::uint32_t)sizeof(long)));
+            rhs -= std::min(rhs, static_cast<std::uint32_t>(sizeof(long)));
         } while (rhs > 0);
     }
     template <typename Tp>
@@ -284,7 +284,7 @@ namespace across
     template <typename Tp>
     bool basic_across_map<Tp>::neuronContains(const Tp& range)
     {
-        return range.x > ~0 && range.y > ~0 && range.x <= widthSpace && range.y <= heightSpace;
+        return range.x < widthSpace && range.y < heightSpace && range.x > ~0 && range.y > ~0;
     }
 
     template <typename Tp>
@@ -445,7 +445,7 @@ namespace across
             return;
         }
 
-        enum : std::uint8_t { FLAG_OPEN_LIST = 1, FLAG_CLOSED_LIST = 2, FLAG_TILED_LIST = 4 };
+        enum : std::uint8_t { FLAG_CLEAN = 0, FLAG_OPEN_LIST = 1, FLAG_CLOSED_LIST = 2, FLAG_TILED_LIST = 4 };
 
         std::list<Tp> finded;
         typename std::list<Tp>::iterator iter, p1, p2;
@@ -470,7 +470,7 @@ namespace across
             AlgorithmUtils::AvailPoints(*this, method, this->neuronGetPoint(current), last, &finded);
             for (iter = std::begin(finded); iter != std::end(finded); ++iter) {
                 select = GetNeuron(*iter);
-                if (!(select->flags)) // free path
+                if (select->flags == FLAG_CLEAN) // free path
                 {
                     select->flags = FLAG_OPEN_LIST;
                     select->cost = current->cost + 1;
