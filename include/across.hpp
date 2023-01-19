@@ -76,12 +76,15 @@ namespace across
         int getWidth();
         int getHeight();
 
-        Neuron* GetNeuron(int x, int y);
+        Neuron* GetNeuron(int x, int y) ;
         Neuron* GetNeuron(const Tp& point);
 
         inline bool neuronContains(const Tp& point);
 
         inline const Tp neuronGetPoint(const Neuron* neuron);
+
+        Neuron* front() ;
+        Neuron* back() ;
 
         // pointer with Point
         inline bool neuronLocked(const Tp& point);
@@ -165,9 +168,7 @@ namespace across
 
         std::div_t lockedDiv = div(std::max(lheight = (lwidth * lheight), 8), 8); // add locked bits
         segmentOffset = lwidth = lockedDiv.quot + lockedDiv.rem;
-        this->neurons = std::malloc(lheight * AcrossDataSizeMultiplier + lwidth);
-
-        clear(true);
+        this->neurons = std::malloc(lheight * AcrossDataSizeMultiplier + lwidth + 100);
     }
 
     template <typename Tp>
@@ -258,6 +259,16 @@ namespace across
             ++n;
         }
         return cal;
+    }
+    template <typename Tp>
+    Neuron* basic_across_map<Tp>::front()
+    {
+        return GetNeuron(0, 0);
+    }
+    template <typename Tp>
+    Neuron* basic_across_map<Tp>::back()
+    {
+        return GetNeuron(widthSpace - 1, heightSpace - 1);
     }
 
     template <typename Tp>
