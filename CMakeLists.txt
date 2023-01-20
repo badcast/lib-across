@@ -4,7 +4,7 @@ project(LibAcross VERSION 1.0)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
+set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-fopenmp")
 if(WIN32)
     #mingw
     message("Static windows format")
@@ -13,4 +13,4 @@ endif()
 
 include_directories("include")
 
-add_executable(test_acx src/test_acx.cpp)
+add_executable(test src/main-test.cpp)

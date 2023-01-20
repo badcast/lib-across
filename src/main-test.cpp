@@ -1,6 +1,6 @@
 #include <iostream>
 #include <across.hpp>
-
+#include <omp.h>
 int check_dmg(across::AcrossMap* map)
 {
     int dmgCount = 0;
@@ -21,13 +21,13 @@ int main()
 
     using namespace std;
     NavResult<APoint> result;
-    cout << "Init Across Map" << endl;
-    AcrossMap map = across::AcrossMap(100, 100);
+    cout << "Init Across Map :: write width and height" << endl;
+    AcrossMap map = across::AcrossMap(1024, 1024);
 
     cout << "Calculating" << endl;
     int x = 1, y = 0, z = 0;
 
-    while (x--) {
+    while (0 && x--) {
         map.randomGenerate(2);
 
         map.find(result, NavMethodRule::PlusMethod, map.front(), map.back());
@@ -40,4 +40,16 @@ int main()
     cout << "Status: " << y << " opened" << endl;
     cout << "Paths: " << z << endl;
     cout << "End." << endl;
+
+const int longx =  1024 * 1024 * 1200;
+bool xxx = true;
+    long* e = new long[longx];
+    while (true) {
+#pragma omp parallel for
+        for (int i = omp_get_num_threads(); i < longx; ++i) {
+            e[i] = ~0;
+        }
+    }
+
+    delete[] e;
 }
