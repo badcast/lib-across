@@ -41,7 +41,7 @@ int main()
     cout << "Paths: " << z << endl;
     cout << "End." << endl;
 
-const int longx =  1024 * 1024 * 1200;
+const int longx =  1024 * 1024 * 344;
 bool xxx = true;
     long* e = new long[longx];
     while (true) {
