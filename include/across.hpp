@@ -2,10 +2,13 @@
  *
  * ASTAR Algorithm composed by RoninEngine (Navigation AI)
  * date: 18.01.2023
+ * author: badcast <lmecomposer@gmail.com>
+ * C++11 minimum required
  *
  **************************************************************/
 
-#pragma once
+#ifndef _ACROSS_H_
+#define _ACROSS_H_
 
 #include <cstdint>
 #include <list>
@@ -15,32 +18,21 @@
 
 namespace across
 {
-    template <typename Tp>
-    class basic_across_map;
 
-    enum NavStatus { Undefined, Locked, Closed, Opened };
+    enum class NavStatus { Undefined, Locked, Closed, Opened };
 
-    enum NavMethodRule { NavigationIntelegency, PlusMethod, SquareMethod, CrossMethod };
+    enum class NavMethodRule { NavigationIntelegency, PlusMethod, SquareMethod, CrossMethod };
 
-    struct APoint {
+    struct NeuronPoint {
         int x;
         int y;
     };
 
-    bool operator==(const APoint& a, const APoint& b) { return !std::memcmp(&a, &b, sizeof(APoint)); }
+    bool operator==(const NeuronPoint& a, const NeuronPoint& b) { return !std::memcmp(&a, &b, sizeof(NeuronPoint)); }
 
-    bool operator!=(const APoint& a, const APoint& b) { return (bool)std::memcmp(&a, &b, sizeof(APoint)); }
+    bool operator!=(const NeuronPoint& a, const NeuronPoint& b) { return (bool)std::memcmp(&a, &b, sizeof(NeuronPoint)); }
 
-    template <typename Point = APoint>
-    struct NavResult {
-        NavStatus status;
-        Point firstNeuron;
-        Point lastNeuron;
-        std::list<Point> RelativePaths;
-        basic_across_map<Point>* map;
-    };
-
-    struct Neuron {
+    struct NeuronMember {
         std::uint8_t flags;
         std::uint32_t h;
         std::uint32_t cost;
@@ -52,18 +44,23 @@ namespace across
         void* neurons;
     };
 
-    constexpr std::size_t AcrossDataSizeMultiplier = sizeof(Neuron);
+    template <typename AcrossMapType>
+    struct NavResult;
 
-    template <typename Tp>
+    template <typename TpNeuronPoint, typename TpNeuronMember = NeuronMember>
     class basic_across_map
     {
-        void* neurons;
+        TpNeuronMember* neurons;
         int segmentOffset;
 
     protected:
         int widthSpace, heightSpace;
 
     public:
+        typedef TpNeuronMember TypeNeuron;
+        typedef TpNeuronPoint TypePoint;
+        typedef NavResult<basic_across_map> NavigateionResult;
+
         explicit basic_across_map(int width, int height);
 
         ~basic_across_map();
@@ -76,39 +73,39 @@ namespace across
         int getWidth();
         int getHeight();
 
-        Neuron* GetNeuron(int x, int y);
-        Neuron* GetNeuron(const Tp& point);
+        TpNeuronMember* GetNeuron(int x, int y);
+        TpNeuronMember* GetNeuron(const TpNeuronPoint& point);
 
-        inline bool neuronContains(const Tp& point);
+        inline bool neuronContains(const TpNeuronPoint& point);
 
-        inline const Tp neuronGetPoint(const Neuron* neuron);
+        inline const TpNeuronPoint neuronGetPoint(const TpNeuronMember* neuron);
 
-        Neuron* front();
-        Neuron* back();
+        TpNeuronMember* front();
+        TpNeuronMember* back();
 
         // pointer with Point
-        inline bool neuronLocked(const Tp& point);
-        inline std::uint8_t& neuronGetFlag(const Tp& point);
-        inline std::uint32_t& neuronGetCost(const Tp& point);
-        inline std::uint32_t& neuronHeuristic(const Tp& point);
-        inline const int neuronGetWeight(const Tp& point);
-        inline const std::uint32_t neuronGetTotal(const Tp& point);
-        inline const bool neuronEmpty(const Tp& point);
-        void neuronLock(const Tp& point, const bool state);
+        inline bool neuronLocked(const TpNeuronPoint& point);
+        inline std::uint8_t& neuronGetFlag(const TpNeuronPoint& point);
+        inline std::uint32_t& neuronGetCost(const TpNeuronPoint& point);
+        inline std::uint32_t& neuronHeuristic(const TpNeuronPoint& point);
+        inline const int neuronGetWeight(const TpNeuronPoint& point);
+        inline const std::uint32_t neuronGetTotal(const TpNeuronPoint& point);
+        inline const bool neuronEmpty(const TpNeuronPoint& point);
+        void neuronLock(const TpNeuronPoint& point, const bool state);
 
         // pointer with pointer
-        bool neuronLocked(const Neuron* neuron);
-        std::uint8_t& neuronGetFlag(const Neuron* neuron);
-        std::uint32_t& neuronGetCost(const Neuron* neuron);
-        std::uint32_t& neuronHeuristic(const Neuron* neuron);
-        const int neuronGetWeight(const Neuron* neuron);
-        const std::uint32_t neuronGetTotal(const Neuron* neuron);
-        inline const bool neuronEmpty(const Neuron* neuron);
-        void neuronLock(const Neuron* neuron, const bool state);
+        bool neuronLocked(const TpNeuronMember* neuron);
+        std::uint8_t& neuronGetFlag(const TpNeuronMember* neuron);
+        std::uint32_t& neuronGetCost(const TpNeuronMember* neuron);
+        std::uint32_t& neuronHeuristic(const TpNeuronMember* neuron);
+        const int neuronGetWeight(const TpNeuronMember* neuron);
+        const std::uint32_t neuronGetTotal(const TpNeuronMember* neuron);
+        inline const bool neuronEmpty(const TpNeuronMember* neuron);
+        void neuronLock(const TpNeuronMember* neuron, const bool state);
 
-        void find(NavResult<Tp>& navResult, NavMethodRule method, Neuron* firstNeuron, Neuron* lastNeuron);
+        void find(NavigateionResult& navResult, NavMethodRule method, TpNeuronMember* firstNeuron, TpNeuronMember* lastNeuron);
 
-        void find(NavResult<Tp>& navResult, NavMethodRule method, Tp first, Tp last);
+        void find(NavigateionResult& navResult, NavMethodRule method, TpNeuronPoint first, TpNeuronPoint last);
 
         void load(const AcrossData& AcrossData);
 
@@ -117,14 +114,21 @@ namespace across
         std::uint32_t getCachedSize();
     };
 
-#define MEMORY_DATA (((std::uint8_t*)neurons) + ((range.x * heightSpace + range.y) * AcrossDataSizeMultiplier) + segmentOffset)
+    template <typename AcrossMapType = basic_across_map<NeuronPoint, NeuronMember>>
+    struct NavResult {
+        NavStatus status;
+        typename AcrossMapType::TypePoint firstNeuron;
+        typename AcrossMapType::TypePoint lastNeuron;
+        std::list<typename AcrossMapType::TypePoint> RelativePaths;
+        const AcrossMapType* map;
+    };
 
-    template <typename Tp = APoint>
+    template <typename Tp = NeuronPoint, typename TpNeuron = NeuronMember>
     class AlgorithmUtils
     {
     public:
-        ///Определяет дистанцию точки от A до точки B
-        ///Используется формула Пифагора "(a^2) + (b^2) = c^2"
+        /// Определяет дистанцию точки от A до точки B
+        /// Используется формула Пифагора "(a^2) + (b^2) = c^2"
         ///\par lhs Первоначальная точка
         ///\par rhs Конечная точка
         ///\return Сумма
@@ -133,7 +137,7 @@ namespace across
             return pow(lhs.x - rhs.x, 2) + pow(lhs.y - rhs.y, 2); // a->x * a->y + b->x * b->y;
         }
 
-        ///Определяет дистанцию точки от A до точки B
+        /// Определяет дистанцию точки от A до точки B
         ///\par lhs Первоначальная точка
         ///\par rhs Конечная точка
         ///\return Сумма
@@ -155,10 +159,10 @@ namespace across
         }
 
         /// Определяет, функцию пойска по направлениям. Таких как: left, up, right, down. etc.
-        static void AvailPoints(basic_across_map<Tp>& map, NavMethodRule method, Tp arrange, Tp target, std::list<Tp>* pathTo, std::size_t maxCount = -1, int filterFlag = -1);
+        static void AvailPoints(basic_across_map<Tp, TpNeuron>& map, NavMethodRule method, Tp arrange, Tp target, std::list<Tp>* pathTo, std::size_t maxCount = -1, int filterFlag = -1);
     };
-    template <typename Tp>
-    basic_across_map<Tp>::basic_across_map(int lwidth, int lheight)
+    template <typename Tp, typename TpNeuron>
+    basic_across_map<Tp, TpNeuron>::basic_across_map(int lwidth, int lheight)
     {
         if (!lwidth || !lheight)
             throw std::runtime_error("Width or Height is zero!");
@@ -168,49 +172,50 @@ namespace across
 
         std::div_t lockedDiv = div(std::max(lheight = (lwidth * lheight), 8), 8); // add locked bits
         this->segmentOffset = lwidth = lockedDiv.quot + lockedDiv.rem;
-        this->neurons = std::malloc(lheight * AcrossDataSizeMultiplier + lwidth + 100);
+        lwidth = lheight * sizeof(TpNeuron) + lwidth + 100;
+        this->neurons = static_cast<TpNeuron*>(std::malloc(lwidth));
     }
 
-    template <typename Tp>
-    basic_across_map<Tp>::~basic_across_map()
+    template <typename Tp, typename TpNeuron>
+    basic_across_map<Tp, TpNeuron>::~basic_across_map()
     {
         std::free(this->neurons);
     }
 
-    template <typename Tp>
-    void basic_across_map<Tp>::randomGenerate(int flagFilter)
+    template <typename Tp, typename TpNeuron>
+    void basic_across_map<Tp, TpNeuron>::randomGenerate(int flagFilter)
     {
         std::uint32_t lhs, rhs = segmentOffset;
-        Neuron* p;
+        TpNeuron* p;
         clear(true);
         do {
             lhs = static_cast<std::uint32_t>(rand() & flagFilter);
-            memcpy(reinterpret_cast<std::int8_t*>(neurons) + segmentOffset - rhs, &lhs, std::min(rhs, (std::uint32_t)sizeof(long)));
+            memcpy((void*)(reinterpret_cast<std::size_t>(neurons) + segmentOffset - rhs), &lhs, std::min(rhs, (std::uint32_t)sizeof(long)));
             rhs -= std::min(rhs, static_cast<std::uint32_t>(sizeof(long)));
         } while (rhs > 0);
     }
-    template <typename Tp>
-    void basic_across_map<Tp>::stress()
+    template <typename Tp, typename TpNeuron>
+    void basic_across_map<Tp, TpNeuron>::stress()
     {
         NavResult<Tp> result;
         Tp first, next = { static_cast<int>(widthSpace - 1), static_cast<int>(heightSpace - 1) };
         // TODO: next a strees
         find(result, NavMethodRule::NavigationIntelegency, first, next);
     }
-    template <typename Tp>
-    int basic_across_map<Tp>::getWidth()
+    template <typename Tp, typename TpNeuron>
+    int basic_across_map<Tp, TpNeuron>::getWidth()
     {
         return widthSpace;
     }
-    template <typename Tp>
-    int basic_across_map<Tp>::getHeight()
+    template <typename Tp, typename TpNeuron>
+    int basic_across_map<Tp, TpNeuron>::getHeight()
     {
         return heightSpace;
     }
-    template <typename Tp>
-    void basic_across_map<Tp>::clear(bool clearLocks)
+    template <typename Tp, typename TpNeuron>
+    void basic_across_map<Tp, TpNeuron>::clear(bool clearLocks)
     {
-        std::uint32_t length = widthSpace * heightSpace * AcrossDataSizeMultiplier;
+        std::uint32_t length = widthSpace * heightSpace * sizeof(TpNeuron);
         std::uint32_t leftOffset;
         if (clearLocks) {
             leftOffset = 0;
@@ -218,12 +223,12 @@ namespace across
         } else {
             leftOffset = this->segmentOffset;
         }
-        memset(reinterpret_cast<std::uint8_t*>(neurons) + leftOffset, 0, length);
+        memset((void*)(reinterpret_cast<std::size_t>(neurons) + leftOffset), 0, length);
     }
-    template <typename Tp>
-    void basic_across_map<Tp>::fill(bool fillLocks)
+    template <typename Tp, typename TpNeuron>
+    void basic_across_map<Tp, TpNeuron>::fill(bool fillLocks)
     {
-        std::uint32_t length = widthSpace * heightSpace * AcrossDataSizeMultiplier;
+        std::uint32_t length = widthSpace * heightSpace * sizeof(TpNeuron);
         std::uint32_t leftoffset;
         if (!fillLocks) {
             leftoffset = this->segmentOffset;
@@ -231,48 +236,48 @@ namespace across
             leftoffset = 0;
             length += this->segmentOffset;
         }
-        memset(reinterpret_cast<std::uint8_t*>(neurons) + leftoffset, 0xff, length);
+        memset((void*)(reinterpret_cast<std::size_t>(neurons) + leftoffset), 0xff, length);
     }
-    template <typename Tp>
-    Neuron* basic_across_map<Tp>::GetNeuron(int x, int y)
+    template <typename Tp, typename TpNeuron>
+    TpNeuron* basic_across_map<Tp, TpNeuron>::GetNeuron(int x, int y)
     {
         return GetNeuron({ x, y });
     }
-    template <typename Tp>
-    Neuron* basic_across_map<Tp>::GetNeuron(const Tp& range)
+    template <typename Tp, typename TpNeuron>
+    TpNeuron* basic_across_map<Tp, TpNeuron>::GetNeuron(const Tp& range)
     {
-        Neuron* result = nullptr;
+        TpNeuron* result = nullptr;
         if (neuronContains(range))
-            result = reinterpret_cast<Neuron*>(MEMORY_DATA);
+            result = reinterpret_cast<TpNeuron*>((reinterpret_cast<std::size_t>(neurons)) + ((range.x * heightSpace + range.y) * sizeof(TpNeuron)) + segmentOffset);
         return result;
     }
 
-    template <typename Tp>
-    std::uint32_t basic_across_map<Tp>::getCachedSize()
+    template <typename Tp, typename TpNeuron>
+    std::uint32_t basic_across_map<Tp, TpNeuron>::getCachedSize()
     {
         std::uint32_t cal = 0;
 
-        Neuron* n = static_cast<Neuron*>(neurons + segmentOffset);
-        Neuron* nM = n + widthSpace * heightSpace;
+        TpNeuron* n = reinterpret_cast<TpNeuron*>(reinterpret_cast<std::size_t>(neurons) + segmentOffset);
+        TpNeuron* nM = n + widthSpace * heightSpace;
         while (n < nM) {
             cal += n->cost + n->h;
             ++n;
         }
         return cal;
     }
-    template <typename Tp>
-    Neuron* basic_across_map<Tp>::front()
+    template <typename Tp, typename TpNeuron>
+    TpNeuron* basic_across_map<Tp, TpNeuron>::front()
     {
         return GetNeuron(0, 0);
     }
-    template <typename Tp>
-    Neuron* basic_across_map<Tp>::back()
+    template <typename Tp, typename TpNeuron>
+    TpNeuron* basic_across_map<Tp, TpNeuron>::back()
     {
         return GetNeuron(widthSpace - 1, heightSpace - 1);
     }
 
-    template <typename Tp>
-    bool basic_across_map<Tp>::neuronLocked(const Tp& range)
+    template <typename Tp, typename TpNeuron>
+    bool basic_across_map<Tp, TpNeuron>::neuronLocked(const Tp& range)
     {
         if (!neuronContains(range))
             throw std::out_of_range("range");
@@ -281,108 +286,108 @@ namespace across
         return (*pointer) & (1 << divide.rem);
     }
 
-    template <typename Tp>
-    bool basic_across_map<Tp>::neuronContains(const Tp& range)
+    template <typename Tp, typename TpNeuron>
+    bool basic_across_map<Tp, TpNeuron>::neuronContains(const Tp& range)
     {
         return range.x < widthSpace && range.y < heightSpace && range.x > ~0 && range.y > ~0;
     }
 
-    template <typename Tp>
-    std::uint8_t& basic_across_map<Tp>::neuronGetFlag(const Tp& range)
+    template <typename Tp, typename TpNeuron>
+    std::uint8_t& basic_across_map<Tp, TpNeuron>::neuronGetFlag(const Tp& range)
     {
-        Neuron* n = GetNeuron(range);
+        TpNeuron* n = GetNeuron(range);
         if (!n)
             throw std::out_of_range("range");
         return n->flags;
     }
-    template <typename Tp>
-    std::uint32_t& basic_across_map<Tp>::neuronGetCost(const Tp& range)
+    template <typename Tp, typename TpNeuron>
+    std::uint32_t& basic_across_map<Tp, TpNeuron>::neuronGetCost(const Tp& range)
     {
-        Neuron* n = GetNeuron(range);
+        TpNeuron* n = GetNeuron(range);
         if (!n)
             throw std::out_of_range("range");
         return n->cost;
     }
-    template <typename Tp>
-    std::uint32_t& basic_across_map<Tp>::neuronHeuristic(const Tp& range)
+    template <typename Tp, typename TpNeuron>
+    std::uint32_t& basic_across_map<Tp, TpNeuron>::neuronHeuristic(const Tp& range)
     {
-        Neuron* n = GetNeuron(range);
+        TpNeuron* n = GetNeuron(range);
         if (!n)
             throw std::out_of_range("range");
         return n->h;
     }
-    template <typename Tp>
-    const int basic_across_map<Tp>::neuronGetWeight(const Tp& range)
+    template <typename Tp, typename TpNeuron>
+    const int basic_across_map<Tp, TpNeuron>::neuronGetWeight(const Tp& range)
     {
         if (!neuronContains(range))
             throw std::out_of_range("range");
         return range.x * range.y + range.y * range.y;
     }
-    template <typename Tp>
-    const std::uint32_t basic_across_map<Tp>::neuronGetTotal(const Tp& range)
+    template <typename Tp, typename TpNeuron>
+    const std::uint32_t basic_across_map<Tp, TpNeuron>::neuronGetTotal(const Tp& range)
     {
-        Neuron* n = GetNeuron(range);
+        TpNeuron* n = GetNeuron(range);
         if (!n)
             throw std::out_of_range("range");
         return n->cost + n->h;
     }
-    template <typename Tp>
-    const bool basic_across_map<Tp>::neuronEmpty(const Tp& range)
+    template <typename Tp, typename TpNeuron>
+    const bool basic_across_map<Tp, TpNeuron>::neuronEmpty(const Tp& range)
     {
         return !neuronGetTotal(range);
     }
-    template <typename Tp>
-    bool basic_across_map<Tp>::neuronLocked(const Neuron* neuron)
+    template <typename Tp, typename TpNeuron>
+    bool basic_across_map<Tp, TpNeuron>::neuronLocked(const TpNeuron* neuron)
     {
         return neuronLocked(neuronGetPoint(neuron));
     }
-    template <typename Tp>
-    std::uint8_t& basic_across_map<Tp>::neuronGetFlag(const Neuron* neuron)
+    template <typename Tp, typename TpNeuron>
+    std::uint8_t& basic_across_map<Tp, TpNeuron>::neuronGetFlag(const TpNeuron* neuron)
     {
         return neuronGetFlag(neuronGetPoint(neuron));
     }
-    template <typename Tp>
-    std::uint32_t& basic_across_map<Tp>::neuronGetCost(const Neuron* neuron)
+    template <typename Tp, typename TpNeuron>
+    std::uint32_t& basic_across_map<Tp, TpNeuron>::neuronGetCost(const TpNeuron* neuron)
     {
         return neuronGetCost(neuronGetPoint(neuron));
     }
-    template <typename Tp>
-    std::uint32_t& basic_across_map<Tp>::neuronHeuristic(const Neuron* neuron)
+    template <typename Tp, typename TpNeuron>
+    std::uint32_t& basic_across_map<Tp, TpNeuron>::neuronHeuristic(const TpNeuron* neuron)
     {
         return neuronHeuristic(neuronGetPoint(neuron));
     }
-    template <typename Tp>
-    const int basic_across_map<Tp>::neuronGetWeight(const Neuron* neuron)
+    template <typename Tp, typename TpNeuron>
+    const int basic_across_map<Tp, TpNeuron>::neuronGetWeight(const TpNeuron* neuron)
     {
         return neuronGetWeight(neuronGetPoint(neuron));
     }
-    template <typename Tp>
-    const std::uint32_t basic_across_map<Tp>::neuronGetTotal(const Neuron* neuron)
+    template <typename Tp, typename TpNeuron>
+    const std::uint32_t basic_across_map<Tp, TpNeuron>::neuronGetTotal(const TpNeuron* neuron)
     {
         return neuronEmpty(neuronGetPoint(neuron));
     }
-    template <typename Tp>
-    const bool basic_across_map<Tp>::neuronEmpty(const Neuron* neuron)
+    template <typename Tp, typename TpNeuron>
+    const bool basic_across_map<Tp, TpNeuron>::neuronEmpty(const TpNeuron* neuron)
     {
         return neuronEmpty(neuronGetPoint(neuron));
     }
 
-    template <typename Tp>
-    void basic_across_map<Tp>::neuronLock(const Neuron* neuron, const bool state)
+    template <typename Tp, typename TpNeuron>
+    void basic_across_map<Tp, TpNeuron>::neuronLock(const TpNeuron* neuron, const bool state)
     {
         neuronLock(neuronGetPoint(neuron), state);
     }
 
-    template <typename Tp>
-    const Tp basic_across_map<Tp>::neuronGetPoint(const Neuron* neuron)
+    template <typename Tp, typename TpNeuron>
+    const Tp basic_across_map<Tp, TpNeuron>::neuronGetPoint(const TpNeuron* neuron)
     {
         if (neuron == nullptr)
             throw std::runtime_error("argument is null");
-        auto divide = std::div((reinterpret_cast<std::size_t>(neuron) - reinterpret_cast<std::size_t>(neurons) - segmentOffset) / AcrossDataSizeMultiplier, heightSpace);
+        auto divide = std::div((std::size_t(neuron) - std::size_t(neurons) - segmentOffset) / sizeof(TpNeuron), heightSpace);
         return { divide.quot, divide.rem };
     }
-    template <typename Tp>
-    void basic_across_map<Tp>::neuronLock(const Tp& range, const bool state)
+    template <typename Tp, typename TpNeuron>
+    void basic_across_map<Tp, TpNeuron>::neuronLock(const Tp& range, const bool state)
     {
         auto divide = std::div(range.x * heightSpace + range.y, 8);
         auto&& pointer = (reinterpret_cast<std::uint8_t*>(neurons) + segmentOffset) + divide.quot;
@@ -391,8 +396,8 @@ namespace across
         (*pointer) ^= (*pointer) & (divide.quot);
         (*pointer) |= divide.quot * (state == true);
     }
-    template <typename Tp>
-    void basic_across_map<Tp>::load(const AcrossData& AcrossData)
+    template <typename Tp, typename TpNeuron>
+    void basic_across_map<Tp, TpNeuron>::load(const AcrossData& AcrossData)
     {
         if (!AcrossData.widthSpace || !AcrossData.heightSpace)
             throw std::runtime_error("Argument param, width or height is empty");
@@ -408,12 +413,12 @@ namespace across
 
         this->widthSpace = AcrossData.widthSpace;
         this->heightSpace = AcrossData.heightSpace;
-        this->neurons = std::malloc(widthSpace * heightSpace * sizeof(Neuron));
+        this->neurons = static_cast<TpNeuron*>(std::malloc(widthSpace * heightSpace * sizeof(TpNeuron)));
 
-        memcpy(this->neurons, AcrossData.neurons, widthSpace * heightSpace * sizeof(Neuron));
+        memcpy(this->neurons, AcrossData.neurons, widthSpace * heightSpace * sizeof(TpNeuron));
     }
-    template <typename Tp>
-    void basic_across_map<Tp>::save(AcrossData* AcrossData)
+    template <typename Tp, typename TpNeuron>
+    void basic_across_map<Tp, TpNeuron>::save(AcrossData* AcrossData)
     {
         if (AcrossData == nullptr)
             return;
@@ -422,16 +427,16 @@ namespace across
         AcrossData->heightSpace = this->heightSpace;
         AcrossData->neurons = this->neurons;
     }
-    template <typename Tp>
-    void basic_across_map<Tp>::find(NavResult<Tp>& navResult, NavMethodRule method, Neuron* firstNeuron, Neuron* lastNeuron)
+    template <typename Tp, typename TpNeuron>
+    void basic_across_map<Tp, TpNeuron>::find(NavigateionResult& navResult, NavMethodRule method, TpNeuron* firstNeuron, TpNeuron* lastNeuron)
     {
-        find(navResult, method, neuronGetPoint(firstNeuron), neuronGetPoint(lastNeuron));
+        this->find(navResult, method, neuronGetPoint(firstNeuron), neuronGetPoint(lastNeuron));
     }
-    template <typename Tp>
-    void basic_across_map<Tp>::find(NavResult<Tp>& navResult, NavMethodRule method, Tp first, Tp last)
+    template <typename TpNeuronPoint, typename TpNeuron>
+    void basic_across_map<TpNeuronPoint, TpNeuron>::find(NavigateionResult& navResult, NavMethodRule method, TpNeuronPoint first, TpNeuronPoint last)
     {
-        using AlgorithmUtils = AlgorithmUtils<Tp>;
-        Neuron *current, *firstNeuron, *lastNeuron, *select;
+        using AlgorithmUtils = AlgorithmUtils<TpNeuronPoint, TpNeuron>;
+        TpNeuron *current, *firstNeuron, *lastNeuron, *select;
         navResult.map = this;
         navResult.firstNeuron = first;
         navResult.lastNeuron = last;
@@ -447,13 +452,13 @@ namespace across
 
         enum : std::uint8_t { FLAG_CLEAN = 0, FLAG_OPEN_LIST = 1, FLAG_CLOSED_LIST = 2, FLAG_TILED_LIST = 4 };
 
-        std::list<Tp> finded;
-        typename std::list<Tp>::iterator iter, p1, p2;
+        std::list<TpNeuronPoint> finded;
+        typename std::list<TpNeuronPoint>::iterator iter, p1, p2;
         navResult.RelativePaths.clear();
         navResult.RelativePaths.emplace_back(first);
         firstNeuron->h = AlgorithmUtils::DistanceManht(first, last);
 
-        //Перестройка
+        // Перестройка
         navResult.status = NavStatus::Opened;
         while (!navResult.RelativePaths.empty()) {
             iter = navResult.RelativePaths.begin(); // get the best Neuron
@@ -494,7 +499,7 @@ namespace across
             finded.clear(); // clear data
         }
 
-        Neuron* lastSelect = nullptr;
+        TpNeuron* lastSelect = nullptr;
         current = lastNeuron;
         navResult.RelativePaths.clear();
         navResult.RelativePaths.emplace_back(last);
@@ -530,17 +535,17 @@ namespace across
         static std::int8_t M_CROSS_V_POINT[] { -1, -1, 1, 1 };
 
         switch (method) {
-        case PlusMethod:
+        case NavMethodRule::PlusMethod:
             *matrixH = PLUS_H_POINT;
             *matrixV = PLUS_V_POINT;
             return sizeof(PLUS_H_POINT);
             break;
-        case SquareMethod:
+        case NavMethodRule::SquareMethod:
             *matrixH = M_SQUARE_H_POINT;
             *matrixV = M_SQUARE_V_POINT;
             return sizeof(M_SQUARE_H_POINT);
             break;
-        case CrossMethod:
+        case NavMethodRule::CrossMethod:
             *matrixH = M_CROSS_H_POINT;
             *matrixV = M_CROSS_V_POINT;
             return sizeof(M_CROSS_H_POINT);
@@ -549,10 +554,10 @@ namespace across
         return 0;
     }
 
-    template <typename Tp>
-    void AlgorithmUtils<Tp>::AvailPoints(basic_across_map<Tp>& map, NavMethodRule method, Tp arrange, Tp target, std::list<Tp>* pathTo, std::size_t maxCount, int filterFlag)
+    template <typename Tp, typename TpNeuron>
+    void AlgorithmUtils<Tp, TpNeuron>::AvailPoints(basic_across_map<Tp, TpNeuron>& map, NavMethodRule method, Tp arrange, Tp target, std::list<Tp>* pathTo, std::size_t maxCount, int filterFlag)
     {
-        Neuron* it = nullptr;
+        TpNeuron* it = nullptr;
         Tp point;
         int i = 0, c;
         std::int8_t* matrixH;
@@ -599,7 +604,7 @@ namespace across
             break;
         }
     }
-#undef MEMORY_DATA
 
-    typedef basic_across_map<APoint> AcrossMap;
+    typedef basic_across_map<NeuronPoint, NeuronMember> AcrossMap;
 }
+#endif
